@@ -1,39 +1,33 @@
-SELECT
-    v.SQL_ID,
-    v.START_TIME,
-    v.END_TIME,
-    ROUND((v.END_TIME - v.START_TIME) * 24 * 60, 2) AS duration_minutes,
-    v.INSTANCE_NUMBER AS INSTANCE_ID,
-    v.MODULE AS application,
-    v.PROGRAM AS backend_app,
-    s.SQL_OPNAME AS sql_op,
-    h.MACHINE AS node
-FROM
-    (
-        SELECT
-            s.SQL_ID,
-            MIN(s.FIRST_LOAD_TIME) AS START_TIME,
-            MAX(s.LAST_LOAD_TIME) AS END_TIME,
-            s.INSTANCE_NUMBER,
-            s.MODULE,
-            s.PROGRAM
-        FROM
-            v$sql s
-        JOIN
-            v$session sess ON s.SQL_ID = sess.SQL_ID
-        WHERE
-            s.FIRST_LOAD_TIME IS NOT NULL
-            AND s.LAST_LOAD_TIME IS NOT NULL
-            AND s.LAST_LOAD_TIME > SYSDATE - INTERVAL '30' MINUTE -- Adjust the time threshold as needed
-        GROUP BY
-            s.SQL_ID,
-            s.INSTANCE_NUMBER,
-            s.MODULE,
-            s.PROGRAM
-    ) v
-JOIN
-    dba_hist_active_sess_history h ON v.SQL_ID = h.SQL_ID
-JOIN
-    v$session s ON v.SQL_ID = s.SQL_ID
-ORDER BY
-    v.END_TIME DESC;
+WITH query_stats AS (
+    SELECT s.program AS application_name,
+           s.sql_id AS sql_id,
+           TO_CHAR(s.sql_exec_start, 'YYYY-MM-DD HH24:MI:SS') AS start_time,
+           TO_CHAR(s.sql_exec_start + (s.elapsed_time / 1000000 / 86400), 'YYYY-MM-DD HH24:MI:SS') AS end_time,
+           s.elapsed_time / 1000000 AS elapsed_seconds,
+           s.sql_fulltext AS sql_text
+    FROM v$sql s
+    JOIN v$session sess ON s.sql_id = sess.sql_id
+    WHERE s.elapsed_time > (30 * 60 * 1000000) -- 30 minutes in microseconds
+),
+hostname_query AS (
+    SELECT sys_context('USERENV', 'SERVER_HOST') AS hostname
+    FROM dual
+)
+SELECT qs.application_name,
+       qs.sql_id,
+       qs.start_time,
+       qs.end_time,
+       qs.elapsed_seconds,
+       COUNT(*) AS num_times_triggered,
+       CASE
+           WHEN COUNT(*) >= 30 THEN 'Daily'
+           WHEN COUNT(*) >= 7 THEN 'Weekly'
+           ELSE 'Monthly'
+       END AS trigger_frequency,
+       h.hostname,
+       ash.INSTANCE_NUMBER
+FROM query_stats qs
+CROSS JOIN hostname_query h
+JOIN v$active_session_history ash ON qs.sql_id = ash.SQL_ID
+GROUP BY qs.application_name, qs.sql_id, qs.start_time, qs.end_time, qs.elapsed_seconds, h.hostname, ash.INSTANCE_NUMBER
+ORDER BY qs.elapsed_seconds DESC;
