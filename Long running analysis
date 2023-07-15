@@ -14,21 +14,21 @@ FROM
             s.SQL_ID,
             MIN(s.FIRST_LOAD_TIME) AS START_TIME,
             MAX(s.LAST_LOAD_TIME) AS END_TIME,
-            s.INSTANCE_ID,
+            s.INSTANCE_NUMBER AS INSTANCE_ID,
             s.MODULE,
             s.PROGRAM,
             s.SQL_OPNAME
         FROM
-            v$active_session_history s
+            v$sql s
         JOIN
-            v$session sess ON s.SESSION_ID = sess.SID
+            v$session sess ON s.SQL_ID = sess.SQL_ID
         WHERE
-            s.SQL_EXEC_ID IS NOT NULL
-            AND s.SQL_EXEC_START IS NOT NULL
+            s.FIRST_LOAD_TIME IS NOT NULL
+            AND s.LAST_LOAD_TIME IS NOT NULL
             AND s.LAST_LOAD_TIME > SYSDATE - INTERVAL '30' MINUTE -- Adjust the time threshold as needed
         GROUP BY
             s.SQL_ID,
-            s.INSTANCE_ID,
+            s.INSTANCE_NUMBER,
             s.MODULE,
             s.PROGRAM,
             s.SQL_OPNAME
