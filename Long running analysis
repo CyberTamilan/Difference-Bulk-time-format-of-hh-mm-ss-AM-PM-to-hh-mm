@@ -3,10 +3,10 @@ SELECT
     v.START_TIME,
     v.END_TIME,
     ROUND((v.END_TIME - v.START_TIME) * 24 * 60, 2) AS duration_minutes,
-    v.INSTANCE_ID,
+    v.INSTANCE_NUMBER AS INSTANCE_ID,
     v.MODULE AS application,
     v.PROGRAM AS backend_app,
-    v.SQL_OPNAME AS sql_op,
+    s.SQL_OPNAME AS sql_op,
     h.MACHINE AS node
 FROM
     (
@@ -14,10 +14,9 @@ FROM
             s.SQL_ID,
             MIN(s.FIRST_LOAD_TIME) AS START_TIME,
             MAX(s.LAST_LOAD_TIME) AS END_TIME,
-            s.INSTANCE_NUMBER AS INSTANCE_ID,
+            s.INSTANCE_NUMBER,
             s.MODULE,
-            s.PROGRAM,
-            s.SQL_OPNAME
+            s.PROGRAM
         FROM
             v$sql s
         JOIN
@@ -30,10 +29,11 @@ FROM
             s.SQL_ID,
             s.INSTANCE_NUMBER,
             s.MODULE,
-            s.PROGRAM,
-            s.SQL_OPNAME
+            s.PROGRAM
     ) v
 JOIN
     dba_hist_active_sess_history h ON v.SQL_ID = h.SQL_ID
+JOIN
+    v$session s ON v.SQL_ID = s.SQL_ID
 ORDER BY
     v.END_TIME DESC;
