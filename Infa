@@ -12,3 +12,17 @@ AND A.DBDID = C.DBDID
 AND C.DBTYPE = D.DBTYPE_ID
 --AND A.SOURCE_NAME <> A.FILE_NAME
 ORDER BY 1,2,3,4,5
+
+
+
+8.23 List of session run history – Long running sessions
+
+SELECT   subject_area, workflow_name, instance_name,
+         TO_CHAR (start_time, 'Dy MM/DD/YYYY HH:MI:SS AM') start_time,
+         TO_CHAR (end_time, 'Dy MM/DD/YYYY HH:MI:SS AM') end_time,
+         ROUND (((end_time - start_time) * 24) * 60) elapsed
+    FROM rep_task_inst_run
+   WHERE task_type = 68
+     AND start_time > TO_DATE ('01/01/2012', 'mm/dd/yyyy')
+--     AND subject_area = 'ABC' AND workflow_name='wfc_dly'
+ORDER BY 1, 2
