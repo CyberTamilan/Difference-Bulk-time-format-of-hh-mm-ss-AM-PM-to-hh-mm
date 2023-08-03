@@ -41,3 +41,11 @@ where c.widget_type = d.object_type_id
 TO_CHAR(TRUNC((EndTime - StartTime) * 24), 'FM00') || ':' ||
     TO_CHAR(MOD(EXTRACT(MINUTE FROM (EndTime - StartTime)), 60), 'FM00') AS TimeDifference
 FROM TimeRecords;
+
+SELECT
+    StartTime,
+    EndTime,
+    TO_CHAR(TRUNC((EndTime - StartTime) * 24), 'FM00') || ':' ||
+    TO_CHAR(TRUNC(MOD((EndTime - StartTime) * 24 * 60, 60)), 'FM00') AS TimeDifference
+FROM TimeRecords;
+
