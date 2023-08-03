@@ -26,3 +26,12 @@ SELECT   subject_area, workflow_name, instance_name,
      AND start_time > TO_DATE ('01/01/2012', 'mm/dd/yyyy')
 --     AND subject_area = 'ABC' AND workflow_name='wfc_dly'
 ORDER BY 1, 2
+
+
+select  d.object_type_name, c.instance_name, c.widget_name, c.applied_rows, c.affected_rows,
+
+c.rejected_rows, c.thruput, c.last_err_msg, c.last_err_code, c.start_time, c.end_time
+ 
+from opb_swidginst_log c, opb_object_type d
+
+where c.widget_type = d.object_type_id
