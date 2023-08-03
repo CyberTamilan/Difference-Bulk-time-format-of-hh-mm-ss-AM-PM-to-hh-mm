@@ -35,3 +35,9 @@ c.rejected_rows, c.thruput, c.last_err_msg, c.last_err_code, c.start_time, c.end
 from opb_swidginst_log c, opb_object_type d
 
 where c.widget_type = d.object_type_id
+
+
+
+TO_CHAR(TRUNC((EndTime - StartTime) * 24), 'FM00') || ':' ||
+    TO_CHAR(MOD(EXTRACT(MINUTE FROM (EndTime - StartTime)), 60), 'FM00') AS TimeDifference
+FROM TimeRecords;
