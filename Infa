@@ -49,3 +49,79 @@ SELECT
     TO_CHAR(TRUNC(MOD((EndTime - StartTime) * 24 * 60, 60)), 'FM00') AS TimeDifference
 FROM TimeRecords;
 
+
+
+SELECT *
+
+  FROM (SELECT s.subj_name subject_area, 'Mapping' parent_type,
+
+               m.mapping_name, t.object_type_name object_type,
+
+               wi.instance_name object_name, u.user_name, p.saved_from,
+
+               p.last_saved last_saved
+
+          FROM opb_widget w,
+
+               opb_object_type t,
+
+               opb_widget_inst wi,
+
+               opb_mapping m,
+
+               opb_subject s,
+
+               opb_version_props p,
+
+               rep_users u
+
+         WHERE w.widget_type = t.object_type_id
+
+           AND w.widget_id = wi.widget_id
+
+           AND w.widget_type = wi.widget_type
+
+           AND wi.mapping_id = m.mapping_id
+
+           AND m.subject_id = s.subj_id
+
+           AND w.widget_id = p.object_id
+
+           AND w.widget_type = p.object_type
+
+           AND p.user_id = u.user_id
+
+        UNION
+
+        SELECT DISTINCT ISNULL (w.subject_area, 'UNKNOWN') subject_area,
+
+                        w.task_type_name parent_type,
+
+                        ISNULL (w.task_name, 'UNKNOWN') parent_name,
+
+                        ti.task_type_name object_type,
+
+                        ti.instance_name object_name, u.user_name,
+
+                        p.saved_from,
+
+                        p.last_saved
+
+                   FROM rep_task_inst ti INNER JOIN
+
+                        rep_version_props p ON (  ti.task_type = p.object_type
+
+                    AND ti.task_id = p.object_id) LEFT OUTER JOIN
+
+                        (SELECT subject_area, task_name, task_id,
+
+                                task_type_name
+
+                           FROM rep_all_tasks
+
+                          WHERE task_type_name IN ('Workflow', 'Worklet')) w ON ti.workflow_id = w.task_id INNER JOIN
+
+                        rep_users u ON  p.user_id = u.user_id
+
+                                    ) tab
+
