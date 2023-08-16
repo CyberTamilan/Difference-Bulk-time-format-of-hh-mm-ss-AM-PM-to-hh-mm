@@ -130,4 +130,20 @@ SELECT *
 TRUNC(SUM(EXTRACT(DAY FROM (end_time - start_time)) * 24 * 60
             + EXTRACT(HOUR FROM (end_time - start_time)) * 60
             + EXTRACT(MINUTE FROM (end_time - start_time)))) 
+;
+
+SELECT
+    s.username AS os_user,
+    s.module,
+    q.sql_text,
+    q.elapsed_time / 1000000 AS elapsed_seconds
+FROM
+    v$sql q
+JOIN
+    v$session s ON q.address = s.sql_address AND q.hash_value = s.sql_hash_value
+WHERE
+    q.command_type = 2 -- 2 represents UPDATE command
+    AND q.elapsed_time > 1000000 -- Adjust this value based on your requirements (microseconds)
+ORDER BY
+    q.elapsed_time DESC;
 
