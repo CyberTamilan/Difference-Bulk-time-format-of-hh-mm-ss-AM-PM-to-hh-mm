@@ -167,3 +167,18 @@ GROUP BY
 ORDER BY
     total_elapsed_seconds DESC;
 
+
+
+SELECT DISTINCT
+d.subject_area AS Folder, d.mapping_name, a.widget_type_name AS Transformation_Type,
+a.instance_name as Transformation_Name, b.attr_name, b.attr_value, c.session_name 
+FROM
+REP_WIDGET_INST a, REP_WIDGET_ATTR b, REP_LOAD_SESSIONS c, REP_ALL_MAPPINGS d
+WHERE b.widget_id = a. widget_id
+AND b.widget_type = a. widget_type
+AND b.widget_type in (3, 11)
+AND c.mapping_id = a.mapping_id
+AND d.mapping_id = a.mapping_id
+AND b.attr_id= 1
+AND b.attr_datatype=2 and b.attr_type=3
+ORDER BY d.subject_area, d.mapping_name
