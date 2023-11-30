@@ -1,3 +1,89 @@
+SELECT  WFLOW.WORKFLOW_NAME                                 AS WORKFLOW_NAME,
+        WFLOW.VERSION_NUMBER                                AS VERSION,
+        TO_CHAR (WFLOW.START_TIME, 'YYYY-MM-DD HH24:MI:SS') AS WFLOW_START_TIME,
+        TO_CHAR (WFLOW.END_TIME, 'HH24:MI:SS')              AS WFLOW_END_TIME,
+        LTRIM (TO_CHAR (FLOOR ( (WFLOW.END_TIME -WFLOW.START_TIME) * 24), '09'))
+                || ':'
+                || LTRIM (TO_CHAR (MOD (FLOOR ( (WFLOW.END_TIME- WFLOW.START_TIME) * 24 * 60), 60), '09'))
+                || ':'
+                || LTRIM (TO_CHAR (MOD (FLOOR ( (WFLOW.END_TIME- WFLOW.START_TIME) * 24 * 60 * 60), 60), '09'))
+                                                            AS WFLOW_RUN_TIME,
+        DECODE (WFLOW.RUN_STATUS_CODE,
+                1, 'Succeeded',
+                3, 'Failed',
+                4, 'Stopped',
+                5, 'Aborted',
+                6, 'Running',
+                   'Unknown')                               AS WFLOW_STATUS,
+        INST.TASK_NAME,
+        TO_CHAR (INST.START_TIME, 'YYYY-MM-DD HH24:MI:SS')  AS TASK_START_TIME,
+        TO_CHAR (INST.END_TIME, 'HH24:MI:SS')               AS TASK_END_TIME,
+        LTRIM (TO_CHAR (FLOOR ( (INST.END_TIME - INST.START_TIME) * 24), '09'))
+                || ':'
+                || LTRIM (TO_CHAR (MOD (FLOOR ( (INST.END_TIME- INST.START_TIME) * 24 * 60), 60), '09'))
+                || ':'
+                || LTRIM (TO_CHAR (MOD (FLOOR ( (INST.END_TIME- INST.START_TIME) * 24 * 60 * 60), 60), '09'))
+                                                            AS TASK_RUN_TIME,
+        DECODE (INST.RUN_STATUS_CODE,
+                1, 'Succeeded',
+                2, 'Disabled',
+                3, 'Failed',
+                4, 'Stopped',
+                5, 'Aborted',
+                6, 'Running',
+                    'Unknown')                                AS TASK_STATUS,
+        DECODE (
+                WFLOW.RUN_STATUS_CODE,
+                6, DECODE (INST.RUN_STATUS_CODE,
+                        6, ROUND (100.0 * -- If running, anchor end to now.
+                                 (SYSDATE - INST.START_TIME) / (SYSDATE - WFLOW.START_TIME)),
+                       /* else */
+                           ROUND (100.0 * (INST.END_TIME - INST.START_TIME) / (SYSDATE - WFLOW.START_TIME))),
+                /* ELSE */
+                        ROUND (100.0 * (INST.END_TIME - INST.START_TIME) / (WFLOW.END_TIME -WFLOW.START_TIME)))
+                                                            AS PCT_OF_WFLOW_TIME,
+        SESS.SRC_SUCCESS_ROWS                               AS SRC_SUCCESS_ROWS,
+        SESS.TARG_SUCCESS_ROWS                              AS TGT_SUCCESS_ROWS,
+        CASE WHEN INST.END_TIME > INST.START_TIME
+             THEN ROUND (SESS.TARG_SUCCESS_ROWS/
+                        ( (INST.END_TIME- INST.START_TIME) * 24 * 60))
+             ELSE 0
+             END                                            AS TGT_ROWS_PER_MIN,
+        STATS.WALLCLOCK_TIME                                AS WALLCLOCK_TIME,
+        STATS.CPU_TIME                                      AS CPU_TIME,
+        STATS.PROCESS_SIZE                                  AS PROCESS_SIZE
+FROM    INFADMIN9.OPB_WFLOW_RUN WFLOW,
+        INFADMIN9.OPB_SUBJECT SUBJECT,
+        INFADMIN9.OPB_TASK_INST_RUN INST,
+        INFADMIN9.OPB_SESS_TASK_LOG SESS,
+        INFADMIN9.OPB_TASK_STATS STATS
+WHERE  (SUBJECT.SUBJ_NAME    = :MY_SUBJECT_AREA1
+     OR SUBJECT.SUBJ_NAME    = :MY_SUBJECT_AREA2)
+AND     WFLOW.START_TIME     > TO_DATE (:MY_START_TIME, 'mm/dd/yyyy HH24:MI:ss')
+AND WFLOW.START_TIME         < TO_DATE (:MY_STOP_TIME,  'mm/dd/yyyy HH24:MI:ss')
+AND INST.TASK_NAME           NOT LIKE :MY_TASK_TO_IGNORE1
+AND INST.TASK_NAME           NOT LIKE :MY_TASK_TO_IGNORE2
+AND WFLOW.SUBJECT_ID         = SUBJECT.SUBJ_ID
+AND WFLOW.WORKFLOW_ID        = INST.WORKFLOW_ID
+AND WFLOW.WORKFLOW_RUN_ID    = INST.WORKFLOW_RUN_ID
+AND WFLOW.WORKFLOW_ID        = SESS.WORKFLOW_ID
+AND WFLOW.WORKFLOW_RUN_ID    = SESS.WORKFLOW_RUN_ID
+AND INST.WORKFLOW_ID         = SESS.WORKFLOW_ID
+AND INST.WORKFLOW_RUN_ID     = SESS.WORKFLOW_RUN_ID
+AND INST.INSTANCE_ID         = SESS.INSTANCE_ID
+AND INST.TASK_TYPE          != 62 --62 is the Start task.
+AND STATS.WORKFLOW_ID    (+) = SESS.WORKFLOW_ID
+AND STATS.WORKFLOW_RUN_ID(+) = SESS.WORKFLOW_RUN_ID
+AND STATS.INSTANCE_ID    (+) = SESS.INSTANCE_ID
+ORDER BY
+      WFLOW.START_TIME ASC,
+      WFLOW.WORKFLOW_NAME,
+      INST.START_TIME ASC;
+
+ ----------_-------------
+
+
+
 
 SELECT
   CASE
