@@ -1,5 +1,17 @@
 
 SELECT
+  CASE
+    WHEN PROCESS_SIZE >= 1024 * 1024 THEN ROUND(PROCESS_SIZE / (1024 * 1024), 2) || ' GB'
+    WHEN PROCESS_SIZE >= 1024 THEN ROUND(PROCESS_SIZE / 1024, 2) || ' MB'
+    ELSE PROCESS_SIZE || ' KB'
+  END AS Process_Size_Human_Readable,
+  ... -- Other columns you want to select
+FROM
+  OPB_TASK_STATS;
+
+
+
+SELECT
                 B.SUBJECT_AREA,
                 B.TASK_NAME AS SESS_NAME,
                 A.ATTR_VALUE AS DTM_BUFFER_SIZE
