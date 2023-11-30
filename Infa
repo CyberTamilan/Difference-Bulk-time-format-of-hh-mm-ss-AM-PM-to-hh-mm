@@ -1,4 +1,22 @@
- SELECT
+
+SELECT
+                B.SUBJECT_AREA,
+                B.TASK_NAME AS SESS_NAME,
+                A.ATTR_VALUE AS DTM_BUFFER_SIZE
+FROM
+                OPB_TASK_ATTR A ,
+                REP_ALL_TASKS B
+WHERE
+                A.ATTR_ID IN (101)
+                AND A.TASK_ID = B.TASK_ID
+                AND TASK_TYPE_NAME IN ('Session')
+ORDER BY 1,2 ASC
+
+
+
+
+
+SELECT
 B.SUBJ_NAME,
 C.DBDNAM,
 D.DBTYPE_NAME,
@@ -196,3 +214,11 @@ AND d.mapping_id = a.mapping_id
 AND b.attr_id= 1
 AND b.attr_datatype=2 and b.attr_type=3
 ORDER BY d.subject_area, d.mapping_name
+
+
+
+
+
+
+
+
